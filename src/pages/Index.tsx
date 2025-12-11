@@ -1,62 +1,25 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useCart } from '@/contexts/CartContext';
+import { products } from '@/data/products';
+import { CartSheet } from '@/components/CartSheet';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [priceRange, setPriceRange] = useState('all');
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [minColors, setMinColors] = useState('all');
 
-  const products = [
-    {
-      id: 1,
-      name: 'Starter Kit Pro',
-      price: 2500,
-      image: 'https://cdn.poehali.dev/projects/16b44156-071a-4ec2-958e-dbfbec657d85/files/19553898-c835-4848-9684-b3ee3440da3d.jpg',
-      category: 'starter',
-      brand: 'Montana',
-      colors: 12,
-      rating: 4.8,
-      reviews: 124
-    },
-    {
-      id: 2,
-      name: 'Advanced Color Set',
-      price: 4200,
-      image: 'https://cdn.poehali.dev/projects/16b44156-071a-4ec2-958e-dbfbec657d85/files/19553898-c835-4848-9684-b3ee3440da3d.jpg',
-      category: 'advanced',
-      brand: 'Molotow',
-      colors: 24,
-      rating: 4.9,
-      reviews: 89
-    },
-    {
-      id: 3,
-      name: 'Professional Pack',
-      price: 6800,
-      image: 'https://cdn.poehali.dev/projects/16b44156-071a-4ec2-958e-dbfbec657d85/files/19553898-c835-4848-9684-b3ee3440da3d.jpg',
-      category: 'professional',
-      brand: 'Ironlak',
-      colors: 36,
-      rating: 5.0,
-      reviews: 156
-    },
-    {
-      id: 4,
-      name: 'Urban Essentials',
-      price: 3200,
-      image: 'https://cdn.poehali.dev/projects/16b44156-071a-4ec2-958e-dbfbec657d85/files/19553898-c835-4848-9684-b3ee3440da3d.jpg',
-      category: 'starter',
-      brand: 'Kobra',
-      colors: 18,
-      rating: 4.6,
-      reviews: 67
-    }
-  ];
+  const brands = ['Montana', 'Molotow', 'Ironlak', 'Kobra'];
 
   const galleryWorks = [
     {
@@ -109,13 +72,27 @@ const Index = () => {
     }
   ];
 
-  const filteredProducts = products.filter(product => {
+  const toggleBrand = (brand: string) => {
+    setSelectedBrands((prev) =>
+      prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
+    );
+  };
+
+  const filteredProducts = products.filter((product) => {
     if (selectedCategory !== 'all' && product.category !== selectedCategory) return false;
     if (priceRange === 'low' && product.price > 3000) return false;
     if (priceRange === 'mid' && (product.price < 3000 || product.price > 5000)) return false;
     if (priceRange === 'high' && product.price < 5000) return false;
+    if (selectedBrands.length > 0 && !selectedBrands.includes(product.brand)) return false;
+    if (minColors === '12' && product.colors < 12) return false;
+    if (minColors === '20' && product.colors < 20) return false;
+    if (minColors === '30' && product.colors < 30) return false;
     return true;
   });
+
+  const handleAddToCart = (product: typeof products[0]) => {
+    addToCart(product);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -133,9 +110,7 @@ const Index = () => {
             <a href="#about" className="text-foreground hover:text-primary transition-colors">О нас</a>
             <a href="#contacts" className="text-foreground hover:text-primary transition-colors">Контакты</a>
           </div>
-          <Button className="bg-primary hover:bg-primary/90">
-            <Icon name="ShoppingCart" size={20} />
-          </Button>
+          <CartSheet />
         </nav>
       </header>
 
@@ -152,7 +127,7 @@ const Index = () => {
                 Профессиональные наборы для граффити от ведущих брендов. Качество, проверенное улицами.
               </p>
               <div className="flex gap-4">
-                <Button size="lg" className="bg-primary hover:bg-primary/90">
+                <Button size="lg" className="bg-primary hover:bg-primary/90" onClick={() => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' })}>
                   <Icon name="ShoppingBag" className="mr-2" size={20} />
                   Смотреть каталог
                 </Button>
@@ -189,60 +164,142 @@ const Index = () => {
             <p className="text-xl text-muted-foreground">Выбери свой идеальный набор</p>
           </div>
 
-          <div className="flex flex-wrap gap-4 mb-8 justify-center">
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Категория" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Все категории</SelectItem>
-                <SelectItem value="starter">Начальный</SelectItem>
-                <SelectItem value="advanced">Продвинутый</SelectItem>
-                <SelectItem value="professional">Профессиональный</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={priceRange} onValueChange={setPriceRange}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Цена" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Все цены</SelectItem>
-                <SelectItem value="low">До 3000₽</SelectItem>
-                <SelectItem value="mid">3000₽ - 5000₽</SelectItem>
-                <SelectItem value="high">От 5000₽</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredProducts.map((product, index) => (
-              <Card key={product.id} className="overflow-hidden hover:shadow-xl transition-shadow animate-fade-in" style={{animationDelay: `${index * 0.1}s`}}>
-                <CardHeader className="p-0">
-                  <img src={product.image} alt={product.name} className="w-full h-48 object-cover" />
+          <div className="grid lg:grid-cols-4 gap-8 mb-8">
+            <div className="lg:col-span-1 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Фильтры</CardTitle>
                 </CardHeader>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <CardTitle className="text-lg">{product.name}</CardTitle>
-                    <Badge variant="outline">{product.brand}</Badge>
+                <CardContent className="space-y-6">
+                  <div>
+                    <label className="text-sm font-semibold mb-3 block">Категория</label>
+                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Категория" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Все категории</SelectItem>
+                        <SelectItem value="starter">Начальный</SelectItem>
+                        <SelectItem value="advanced">Продвинутый</SelectItem>
+                        <SelectItem value="professional">Профессиональный</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <CardDescription className="mb-3">
-                    {product.colors} цветов в наборе
-                  </CardDescription>
-                  <div className="flex items-center gap-1 mb-3">
-                    <Icon name="Star" className="text-yellow-500 fill-yellow-500" size={16} />
-                    <span className="font-semibold">{product.rating}</span>
-                    <span className="text-muted-foreground text-sm">({product.reviews})</span>
+
+                  <div>
+                    <label className="text-sm font-semibold mb-3 block">Цена</label>
+                    <Select value={priceRange} onValueChange={setPriceRange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Цена" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Все цены</SelectItem>
+                        <SelectItem value="low">До 3000₽</SelectItem>
+                        <SelectItem value="mid">3000₽ - 5000₽</SelectItem>
+                        <SelectItem value="high">От 5000₽</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-primary">{product.price}₽</span>
-                    <Button size="sm" className="bg-primary hover:bg-primary/90">
-                      <Icon name="Plus" size={16} />
-                    </Button>
+
+                  <div>
+                    <label className="text-sm font-semibold mb-3 block">Количество цветов</label>
+                    <Select value={minColors} onValueChange={setMinColors}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Цвета" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Любое количество</SelectItem>
+                        <SelectItem value="12">От 12 цветов</SelectItem>
+                        <SelectItem value="20">От 20 цветов</SelectItem>
+                        <SelectItem value="30">От 30 цветов</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
+
+                  <div>
+                    <label className="text-sm font-semibold mb-3 block">Бренды</label>
+                    <div className="space-y-3">
+                      {brands.map((brand) => (
+                        <div key={brand} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={brand}
+                            checked={selectedBrands.includes(brand)}
+                            onCheckedChange={() => toggleBrand(brand)}
+                          />
+                          <label
+                            htmlFor={brand}
+                            className="text-sm cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            {brand}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      setSelectedCategory('all');
+                      setPriceRange('all');
+                      setSelectedBrands([]);
+                      setMinColors('all');
+                    }}
+                  >
+                    <Icon name="X" className="mr-2" size={16} />
+                    Сбросить фильтры
+                  </Button>
                 </CardContent>
               </Card>
-            ))}
+            </div>
+
+            <div className="lg:col-span-3">
+              <div className="mb-4 text-muted-foreground">
+                Найдено: {filteredProducts.length} товаров
+              </div>
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredProducts.map((product, index) => (
+                  <Card
+                    key={product.id}
+                    className="overflow-hidden hover:shadow-xl transition-shadow animate-fade-in cursor-pointer"
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                    onClick={() => navigate(`/product/${product.id}`)}
+                  >
+                    <CardHeader className="p-0">
+                      <img src={product.image} alt={product.name} className="w-full h-48 object-cover" />
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <CardTitle className="text-lg">{product.name}</CardTitle>
+                        <Badge variant="outline">{product.brand}</Badge>
+                      </div>
+                      <CardDescription className="mb-3">
+                        {product.colors} цветов в наборе
+                      </CardDescription>
+                      <div className="flex items-center gap-1 mb-3">
+                        <Icon name="Star" className="text-yellow-500 fill-yellow-500" size={16} />
+                        <span className="font-semibold">{product.rating}</span>
+                        <span className="text-muted-foreground text-sm">({product.reviews})</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-2xl font-bold text-primary">{product.price}₽</span>
+                        <Button
+                          size="sm"
+                          className="bg-primary hover:bg-primary/90"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToCart(product);
+                          }}
+                        >
+                          <Icon name="Plus" size={16} />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
